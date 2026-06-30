@@ -1,0 +1,7 @@
+算法       | 解决什么问题                         | 核心结构                     | 易错点
+BFS        | 无权图最短步数/层序遍历               | queue + visited              | 入队时标记 visited
+DFS        | 连通性/路径/回溯搜索                  | recursion/stack + visited    | 出口、回溯、避免重复访问
+拓扑排序   | 有向无环图的先后依赖顺序               | indegree + queue             | 出队数少于顶点数说明有环
+Dijkstra   | 单源最短路径                          | dist + 小根堆                | 不能有负权边
+Floyd      | 任意两点最短路径                      | dist二维 + next二维 + 三重循环 | k 在最外层
+AOE        | 工程最短时间和关键活动                 | 拓扑序 + ve + vl             | 关键活动看边，不是看点
