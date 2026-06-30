@@ -1,0 +1,381 @@
+#include <iostream>
+#include<vector>
+#include <queue>
+#include <functional>
+#include<algorithm>
+using namespace std;
+const  int INF = 1e9;
+class Graph
+{
+	struct edge
+	{
+		int to;
+		int from;
+		int weight;
+		string data;//方便 AOV
+		edge* next;
+	 };
+	struct vertex
+	{
+		int num;//编号
+		string  data;
+		edge* firstedge;//用两个结构体，表明一个顶点的不同边
+	};
+	int vertexnum;
+	vertex* vertexes;
+public:
+		Graph(int count) : vertexnum(count)
+	    {
+		vertexes = new vertex[count];
+		     for (int i = 0;i < vertexnum;i++)
+		     {
+			  vertexes[i].num = i;
+			  vertexes[i].data = "";
+			  vertexes[i].firstedge = nullptr;
+		     }
+	    }
+		// 析构函数（释放内存，防止泄漏）
+		~Graph() {
+			for (int i = 0; i < vertexnum; i++) {
+				edge* cur = vertexes[i].firstedge;
+				while (cur) {
+					edge* temp = cur;
+					cur = cur->next;
+					delete temp;
+				}
+			}
+			delete[] vertexes;
+		}
+		void addedge(int start, int end, int weight, string data)
+		{
+			if (start < 0 || start >= vertexnum || end < 0 || end >= vertexnum) return;
+			edge* e = new edge();
+			e->from = start;
+			e->to = end;
+			e->data = data;
+			e->weight = weight;
+			e->next = vertexes[start].firstedge;	
+			vertexes[start].firstedge = e;
+		}
+		void vefindpathshow(int end, vector<vector<int>>& parent, vector<int> &path)
+		{
+			path.push_back(end);
+			if (parent[end].empty())
+			{
+				for (int i = path.size() - 1;i >= 0;i--)
+				{
+					cout << path[i];
+					if (i != 0)
+					{
+						cout << "->";
+					}
+				}
+			}
+			else {
+				for (int i : parent[end])
+				{
+					vefindpathshow(i, parent, path);
+				}
+			}
+			path.pop_back();
+		}
+		void vlfindpathshow(int start, vector<vector<int>>& next, vector<int>& path)
+		{
+			path.push_back(start);
+			if (next[start].empty())
+			{
+				for (int i =0;i<path.size();i++)
+				{
+					cout << path[i];
+					if (i != path.size()-1)
+					{
+						cout << "->";
+					}
+				}
+			}
+			else {
+				for (int i : next[start])
+				{
+					vlfindpathshow(i, next, path);
+				}
+			}
+			path.pop_back();
+		}
+		// 顶点表示事件
+		void BFS(int start)
+		{
+			if (start < 0 || start >= vertexnum) return;
+			vector<bool> visited(vertexnum, false);
+			queue<int> q;          // 存顶点编号，避免拷贝 vertex
+			q.push(start);
+			visited[start] = true;
+			while (!q.empty()) {
+				int curNum = q.front();
+				q.pop();
+				vertex& cur = vertexes[curNum]; // 用地址来传递，降低损耗
+				cout << "编号：" << cur.num << " 内容：" << cur.data << " ";
+				edge* e = cur.firstedge;
+				while (e != nullptr) {
+					if (!visited[e->to]) {
+						visited[e->to] = true;
+						q.push(e->to);
+					}
+					e = e->next;
+				}
+			}
+			cout << endl;
+		}
+		void DFS(int start)
+		{
+			if (start < 0 || start >= vertexnum) return;
+			vector<bool> visited(vertexnum, false);	
+			vector<int> path;
+			DFStuil(start,visited, path);
+			for (int  v : path)
+			{
+				cout << vertexes[v].num << " " << vertexes[v].data;
+			}
+			cout << endl;
+			
+		}
+		void DFStuil(int cur, vector<bool>& visited, vector<int>& path) 
+		{
+			visited[cur] = true;
+			path.push_back(vertexes[cur].num);
+			edge* e = vertexes[cur].firstedge;
+			while (e != nullptr) {
+				if (!visited[e->to]) {
+					DFStuil(e->to, visited, path);
+				}
+				e = e->next;
+			}
+		}
+		void Dijkstra(int start,int end)
+		{
+			if (start < 0 || start >= vertexnum || end < 0 || end >= vertexnum) 
+			{
+				cout << "起点或终点编号越界！" << endl;
+				return;
+			}
+			vector<int> dist(vertexnum, INF);
+			dist[start] = 0;
+			vector<int> parent(vertexnum, -1);// parent 来记录 在DIj看stra下的 节点父路径
+			priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> pq;
+			pq.push({ 0,start });
+			while (!pq.empty())
+			{
+				auto [d, v] = pq.top();
+				pq.pop();
+				if (d != dist[v]) continue;
+				if (v == end) break;
+				vertex& cur = vertexes[v];
+				edge* e = cur.firstedge;
+				while (e != nullptr)
+				{
+					if ( dist[e->to] > dist[cur.num] + e->weight)
+					{
+						dist[e->to] = dist[cur.num] + e->weight;
+						parent[e->to] = cur.num;
+						pq.push({ dist[e->to],e->to });
+					}
+						e = e->next;				
+				}
+			}
+			if (dist[end] == INF)
+			{
+				cout << "不可到达" << endl;
+				return;
+			}
+			cout << "节点:" << end << "最短路径为：" << dist[end] << endl;
+			int cur = end;
+			vector<int> result;
+			while (cur != -1)
+			{
+			
+				result.push_back(cur);
+				cur = parent[cur];
+			}
+			cout << " 路线为:" << " ";
+			for (int i = result.size() - 1;i >= 0;i++)
+			{
+				cout << result[i];
+				if (i != 0)
+				{
+					cout << "->";
+				}
+			}
+		}
+		void Floyd(int v1, int v2)
+		{
+			if (v1 < 0 || v2 < 0 || v1 >= vertexnum || v2 >= vertexnum)
+			{
+				cout << "错误：起点和重点不合规" << endl;
+				return;
+			}
+			vector<vector<int>> dist(vertexnum,vector<int>(vertexnum,INF));
+			vector<vector<int>> next(vertexnum,vector<int>(vertexnum,-1));
+			for (int i = 0;i < vertexnum; i++)
+			{
+				vertex& v = vertexes[i];
+				edge* e = v.firstedge;
+				while (e != nullptr)
+				{
+					dist[v.num][e->to] = e->weight;
+					next[v.num][e->to] = e->to;
+					e = e->next;
+				}
+				dist[i][i] = 0;
+ 			}
+			for (int k = 0; k < vertexnum; k++)
+			{
+				for (int i = 0;i < vertexnum; i++)
+				{
+					for (int j = 0; j < vertexnum; j++)
+					{
+						if (dist[i][k] != INF && dist[k][j] != INF)
+						{
+							int now = dist[i][k] + dist[k][j];
+							if (dist[i][j] > now)
+							{
+								dist[i][j] = now;
+								next[i][j] = next[i][k];
+							}
+						}
+					}
+				}
+			}
+			if (dist[v1][v2] == INF||next[v1][v2]==-1)
+			{
+				cout << "不可到达" << endl;
+				return;
+			}
+			cout << "点：" << v1 << "到" << v2 << " 的最短路径为" << dist[v1][v2] << endl;
+			cout << " 路线为：" << " ";
+			int cur = v1;
+			while (cur != v2)
+			{
+				cout << cur << "->";
+				cur = next[cur][v2];
+			}
+			cout << v2 << endl;
+		}
+		void AOE()
+		{
+			vector<int> indegree(vertexnum, 0);
+			vector<int> topo;
+			for (int i = 0;i < vertexnum; i++)
+			{
+				vertex& cur = vertexes[i];
+				edge* e = cur.firstedge;
+				while (e != nullptr)
+				{
+					indegree[e->to]++;
+					e = e->next;
+				}
+			}
+			queue<int> q;
+			for (int i = 0;i < vertexnum; i++)
+			{
+				if (indegree[i] == 0)
+				{
+					q.push(i);
+				}
+			}
+			vector<int> ve(vertexnum, 0);
+			vector<vector<int>> parent(vertexnum);
+			while (!q.empty())
+			{
+				int cur = q.front();
+				q.pop();
+				topo.push_back(cur);
+				vertex& v = vertexes[cur];
+				edge* e = v.firstedge;
+				while (e != nullptr)
+				{
+					indegree[e->to]--;
+						int now = ve[v.num] + e->weight;
+						if (ve[e->to] < now)
+						{
+							ve[e->to] = now;
+							parent[e->to].clear();
+							parent[e->to].push_back(v.num);
+						}
+						else if (ve[e->to] == now)
+						{
+							ve[e->to] = now;
+							parent[e->to].push_back(v.num);
+						}
+					
+					if (indegree[e->to] == 0)
+					{
+						q.push(e->to);
+					}
+					e = e->next;
+				}
+
+			}
+			if (topo.size() != vertexnum) 
+			{
+				cout << "图中存在环，无法进行 AOE 分析！" << endl;
+				return;
+			}
+			vector<int> vepath;
+			for (int i = topo.size()-1;i>=0;i--)
+			{
+				int thing = topo[i];
+				cout << "事件：" << thing << "的最早发生时间" << ve[thing] << endl;
+				cout << "ve的路线为:";
+				vefindpathshow(thing, parent, vepath);
+				cout << endl;
+				vepath.clear();
+			}
+			int projectTime = 0;
+			for (int i = 0; i < vertexnum; i++)
+			{
+				projectTime = max(projectTime, ve[i]);
+			}
+			vector<vector<int>> next(vertexnum);
+			vector<int> vl(vertexnum, projectTime);
+			for (int i = topo.size() - 1; i >= 0; i--)
+			{
+				int u = topo[i];
+				for (edge* e = vertexes[u].firstedge; e != nullptr; e = e->next)
+				{
+					int v = e->to;
+					int now = vl[v] - e->weight;
+					if (vl[u] > now)
+					{
+						vl[u] = now;
+						next[u].clear();
+						next[u].push_back(v);
+					}
+					else if (vl[u] == now)
+					{
+						next[u].push_back(v);
+					}
+				}
+			}
+			vector<int> vlpath;
+			for (int i = 0;i < vertexnum;i++)
+			{
+				int thing = topo[i];
+				cout << "事件：" << thing << "的最晚发生时间为" << vl[thing] << endl;
+				cout << "路线为：";
+				vlfindpathshow(thing, next, vlpath);
+				cout << endl;
+				vlpath.clear();
+			}
+			cout << "关键活动为：" << endl;
+			for (int u = 0; u < vertexnum; u++)
+			{
+				for (edge* e = vertexes[u].firstedge; e != nullptr; e = e->next)
+				{
+					int v = e->to;
+					if (ve[u] == vl[v]-e->weight)//408中关键活动 = 最早能开始的时间，已经等于最晚必须开始的时间，如果要考虑工程现实问题，就新加一个节点x 表示要等待的时间。
+					{
+						cout << u << "->" << v << " 权值：" << e->weight << endl;
+					}
+				}
+			}
+		}
+};
